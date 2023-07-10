@@ -13,6 +13,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
+GENRE_LIST = None
+
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user.name} ({client.user.id})') # type: ignore
@@ -32,8 +34,12 @@ async def recommend_movie(message):
     if genre.lower() == 'random':
         movie_data = fetch_random_movie()
     else:
-        movie_data = fetch_movie_by_genre(genre)
-        print(movie_data)
+        genre_id = get_genre_id(genre)
+        if genre_id is None:
+            await message.channel.send("Sorry, I couldn't find the genre ID for the specified genre")
+            return 
+        movie_data = fetch_movie_by_genre_id(genre_id)
+
     if movie_data is None:
         await message.channel.send("Sorry, I couldn't find a recommendation at the moment")
         return
@@ -81,38 +87,51 @@ def fetch_random_movie():
         print('Error while fetching random movie: ', str(e))
         return None
 
-def get_genre_id(genre):
+def fetch_genre_list():
     api_key = os.getenv('TMDB_API_KEY')
     url = f'https://api.themoviedb.org/3/genre/movie/list?api_key={api_key}'
-
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            genres = data['genres']
-            print(genres)
-            for i in genres:
-                if i['name'].lower == genre.lower():
-                    return i['id']
+        retries = 3
+        for attempt in range(retries):
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                return data['genres']
+            else:
+                if attempt < retries - 1:
+                    time.sleep(1)
+                    continue
+                else:
+                    print(f"Error while fetching genre list: {response.status_code}")
+                    return None
     except requests.exceptions.RequestException as e:
-        print('Error while fetching genre list: ', str(e))
+        print('Error occurred while fetching genre list:', str(e))
         return None
 
-def fetch_movie_by_genre(genre):
+def get_genre_id(genre):
+    global GENRE_LIST
+    
+    if GENRE_LIST is None:
+        GENRE_LIST = fetch_genre_list()
+    if GENRE_LIST is not None:
+        genre_l = genre.lower()
+        for g in GENRE_LIST:
+            if g['name'].lower() == genre_l:
+                return g['id']
+    return None
+
+def fetch_movie_by_genre_id(genre_id):
     api_key = os.getenv('TMDB_API_KEY')
-    genre_id = get_genre_id(genre)
-
-    if genre_id is None:
-        return None
     # print('genre id')
-    # url = f'https://api.themoviedb.org/3/discover/movie?api_key={api_key}&with_genres={genre_id}'
-    url = f'https://api.themoviedb.org/3/discover/movie?&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&with_genres={genre_id}'
-    headers = {
-        "accept": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMzI3YzlhYzkzYTc5MjE5ZWRkYWEwYTc3YTVhZmY0MSIsInN1YiI6IjY0YWJkZGI3YjY4NmI5MDBjYzBhN2NmYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.xoS2li5qtrVLV9ix5I_AiGb33yE4PckHpmiwuRhi0mI"
-    }
+    url = f'https://api.themoviedb.org/3/discover/movie?api_key={api_key}&with_genres={genre_id}'
+    # url = f'https://api.themoviedb.org/3/discover/movie?&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&with_genres={genre}'
+    # headers = {
+    #     "accept": "application/json",
+    #     "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMzI3YzlhYzkzYTc5MjE5ZWRkYWEwYTc3YTVhZmY0MSIsInN1YiI6IjY0YWJkZGI3YjY4NmI5MDBjYzBhN2NmYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.xoS2li5qtrVLV9ix5I_AiGb33yE4PckHpmiwuRhi0mI"
+    # }
     try:
-        response = requests.get(url, headers=headers)
+        # response = requests.get(url, headers=headers)
+        response = requests.get(url)
         # print(response)
         if response.status_code == 200:
             data = response.json()
@@ -128,9 +147,10 @@ def fetch_movie_by_genre(genre):
             else:
                 return None
         else:
+            print(f'Error while fetching movie by genre ID: {response.status_code}')
             return None
     except requests.exceptions.RequestException as e:
-        print(f"Error occurred while fetching {genre} movie:", str(e))
+        print(f"Error occurred while fetching movie by genre ID:", str(e))
         return None
     
 if __name__ == '__main__':
