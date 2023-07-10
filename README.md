@@ -19,5 +19,3 @@ It uses
 
 ## TODO
 1.  Fix the API timeout issue
-2. Fix the `!recommend <genre>` not able to recognize the genre
-3. Fix the `get_genre_id` function
