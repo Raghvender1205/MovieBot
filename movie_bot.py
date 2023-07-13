@@ -27,9 +27,10 @@ async def on_message(message):
         channel = message.channel
         await channel.send('Bot is working!')
     if message.content.startswith('!recommend'):
-        await recommend_movie(message)
-    if message.content.startswith('!recommend list'):
-        await recommend_movie_list(message)
+        if message.content.startswith('!recommend list'):
+            await recommend_movie_list(message)
+        else:
+            await recommend_movie(message)
 
 async def recommend_movie(message):
     """
@@ -88,14 +89,19 @@ async def recommend_movie_list(message):
 
     try:
         embed = discord.Embed(title=f'Movie recommmendations for {genre}', description="")
-        for movie in movie_data:
+        for i, movie in enumerate(movie_data, start=1):
             title = movie['title']
             overview = movie['overview']
             if len(overview) > 2000:
-                overview = overview[:2000] + '...'
-            embed.add_field(name=title, value=overview, inline=False)
+                overview = overview[:1997] + '...'
+            embed.add_field(name=f"{i}. {title}", value=overview, inline=False)
+            if i % 10 == 0:
+                await message.channel.send(embed=embed)
+                embed.clear_fields()
+        
+        if len(embed.fields) > 0:
+            await message.channel.send(embed=embed)
 
-        await message.channel.send(embed=embed)
     except KeyError:
         await message.channel.send('Sorry, there was an issue with the movie recommendation. Please try again later')
 
@@ -172,9 +178,11 @@ def get_genre_id(genre):
         GENRE_LIST = fetch_genre_list()
     if GENRE_LIST is not None:
         genre_l = genre.lower()
+        print("Available Genres:", [g['name'] for g in GENRE_LIST])
         for g in GENRE_LIST:
             if g['name'].lower() == genre_l:
                 return g['id']
+    print("Genre ID not found for:", genre)  # Debugging statement
     return None
 
 def fetch_movie_by_genre_id(genre_id):

@@ -19,3 +19,5 @@ It uses
 
 ## TODO
 1.  Fix the API timeout issue
+2.  Try to add UI, Buttons for interactivity
+3.  Add more features to support the full `TMDB` API.
