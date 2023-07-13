@@ -23,14 +23,20 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return 
+    
     if message.content.startswith('!test'):
         channel = message.channel
         await channel.send('Bot is working!')
+    
+    if message.content.startswith('!help'):
+        await show_help(message)
+
     if message.content.startswith('!recommend'):
         if message.content.startswith('!recommend list'):
             await recommend_movie_list(message)
         else:
             await recommend_movie(message)
+
 
 async def recommend_movie(message):
     """
@@ -164,6 +170,7 @@ def fetch_genre_list():
         print('Error occurred while fetching genre list:', str(e))
         return None
 
+
 def get_genre_id(genre):
     """
     Get genre id from the genre list function
@@ -184,6 +191,7 @@ def get_genre_id(genre):
                 return g['id']
     print("Genre ID not found for:", genre)  # Debugging statement
     return None
+
 
 def fetch_movie_by_genre_id(genre_id):
     """
@@ -259,6 +267,21 @@ def fetch_movies_by_genre(genre_id):
     except requests.exceptions.RequestException as e:
         print('Error while fetching movies by genre ID: ', str(e))
         return None 
+
+async def show_help(message):
+    """
+    Function to list all the commands for the bot 
+    """
+    help_messages = [
+        "Available commands:",
+        "- !test: Check if the bot is working",
+        "- !recommend <genre>: Get a movie recommendation for that genre",
+        "- !recommend random: Get a movie recommendation by random",
+        "- !recommend list <genre>: Get a list of movie recommendations by genre",
+        "- !help: Show this help message"
+    ]
+    help_message = "\n".join(help_messages)
+    await message.channel.send(help_message)
 
 if __name__ == '__main__':
     client.run(str(token))
