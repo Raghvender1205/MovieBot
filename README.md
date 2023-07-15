@@ -15,6 +15,8 @@ It uses
 1. It currently performs two actions
 - `!recommend random`:- This recommends us a random movie
 - `!recommend <genre>`:- This feature recommends the movie based on the `<genre>` query.
+- `!recommend list <genre>`:- This feature recommends a list of movies based on the `<genre>` query.
+- `!recommend tv <genre>`:- This feature recommends a list  of tv shows based on the `<genre>`.
 
 
 ## TODO

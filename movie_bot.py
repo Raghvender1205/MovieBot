@@ -283,6 +283,7 @@ async def show_help(message):
         "- !recommend <genre>: Get a movie recommendation for that genre",
         "- !recommend random: Get a movie recommendation by random",
         "- !recommend list <genre>: Get a list of movie recommendations by genre",
+        "- !recommend tv <genre>: Get a list of TV show recommendations by genre",
         "- !help: Show this help message"
     ]
     help_message = "\n".join(help_messages)
