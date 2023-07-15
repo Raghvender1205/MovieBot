@@ -6,6 +6,8 @@ import time
 import os
 from dotenv import load_dotenv
 
+from tv_shows import fetch_tv_shows, fetch_tv_shows_by_genre
+
 # Keys
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -34,6 +36,8 @@ async def on_message(message):
     if message.content.startswith('!recommend'):
         if message.content.startswith('!recommend list'):
             await recommend_movie_list(message)
+        elif message.content.startswith('!recommend tv'):
+            await recommend_tv_show_list(message)
         else:
             await recommend_movie(message)
 
@@ -268,6 +272,7 @@ def fetch_movies_by_genre(genre_id):
         print('Error while fetching movies by genre ID: ', str(e))
         return None 
 
+
 async def show_help(message):
     """
     Function to list all the commands for the bot 
@@ -282,6 +287,34 @@ async def show_help(message):
     ]
     help_message = "\n".join(help_messages)
     await message.channel.send(help_message)
+
+
+async def recommend_tv_show_list(message):
+    genre = message.content.split(' ')[2]
+    genre_id = get_genre_id(genre)
+    if genre_id is None:
+        await message.channel.send("Sorry, I couldn't find any TV show recommendations for this genre")
+        return
+    tv_shows = fetch_tv_shows_by_genre(genre)
+    if not tv_shows:
+        await message.channel.send("Sorry, I couldn't find any TV show recommmendations for this genre")
+        return
+    
+    try:
+        embed = discord.Embed(title=f'TV show recommendations for {genre}', description='')
+        for i, show in enumerate(tv_shows, start=1):
+            name = show.get("name", "Unknown")
+            overview = show.get("overview", "")
+            if len(overview) > 2000:
+                overview = overview[:1997] + "..."
+            embed.add_field(name=f"{i}. {name}", value=overview, inline=False)
+            if i % 10 == 0:
+                await message.channel.send(embed=embed)
+                embed.clear_fields()
+        if len(embed.fields) > 0:
+            await message.channel.send(embed=embed)
+    except KeyError:
+        await message.channel.send("Sorry, there was an issue with the TV show recommendation. Please try again later.")
 
 if __name__ == '__main__':
     client.run(str(token))
